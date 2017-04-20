@@ -37,16 +37,20 @@ exports.readListOfUrls = function(callback) {
 
 exports.isUrlInList = function(url, callback) {
   exports.readListOfUrls(function(data) {
-    if (data.includes(url)) {
-      callback(true);
-    } else {
-      callback(false);
-    }
+    // if (data.includes(url)) {
+    //   callback(true);
+    // } else {
+    //   callback(false);
+    // }
+
+    // this is much cleaner:
+    callback(data.includes(url));
   });
 };
 
 exports.addUrlToList = function(url, callback) {
-  fs.writeFile(exports.paths.list, url, function(err) {
+  // this should be 'appendFile' instead of 'writeFile', which will overwrite the file every time
+  fs.appendFile(exports.paths.list, url, function(err) {
     if (err) {
       console.error(err);
     }
@@ -56,24 +60,19 @@ exports.addUrlToList = function(url, callback) {
 
 exports.isUrlArchived = function(url, callback) {
   fs.exists(exports.paths.archivedSites + '/' + url, function(exists) {
-    if (exists) {
-      callback(true);
-    } else {
-      callback(false);
-    }
+    callback(exists);
   });
 };
 
 exports.downloadUrls = function(urls) {
-    console.log(urls);
-    urls.forEach(function(url) {
-      console.log(url);
-      request('http://' + url, function(error, response, body) {
-        fs.writeFile(exports.paths.archivedSites + '/' + url, body, function() {
-          console.log('data downloaded');
-        });
-      });
+  urls.forEach(function(url) {
+    request('http://' + url, function(error, response, body) {
+      if (error) {
+        console.error(error);
+      }
+      fs.writeFile(exports.paths.archivedSites + '/' + url, body, () => {});
     });
+  });
 };
 
 
