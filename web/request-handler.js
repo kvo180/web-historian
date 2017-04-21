@@ -72,10 +72,6 @@ exports.handleRequest = function (req, res) {
                 res.end(data);
               });
             } else {
-              archive.readListOfUrls(function(urls) {
-                archive.downloadUrls(urls);
-              });
-
               // show loading HTML file
               helpers.serveAssets(res, archive.paths.siteAssets + '/loading.html', function(data) {
                 res.writeHead(200, helpers.headers);
@@ -86,11 +82,8 @@ exports.handleRequest = function (req, res) {
         } else {
            // add to list
           console.log('not in list');
-          archive.addUrlToList(url + '\n', () => {
-            archive.readListOfUrls(function(urls) {
-              archive.downloadUrls(urls);
-            });
-          });      
+          archive.addUrlToList(url + '\n', () => {});
+          
           helpers.serveAssets(res, archive.paths.siteAssets + '/loading.html', function(data) {
             res.writeHead(302, helpers.headers);
             res.end(data);
