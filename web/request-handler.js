@@ -39,8 +39,10 @@ exports.handleRequest = function (req, res) {
         if (isArchived) {
           // show archived content
           console.log('showing archived content');
-          res.writeHead(200, helpers.headers);
-          res.end(archive.paths.archivedSites + '/' + req.url);
+          helpers.serveAssets(res, archive.paths.archivedSites + '/' + req.url, (data) => {
+            res.writeHead(200, helpers.headers);
+            res.end(data);
+          });
         } else {
           // return 404 page not found
           res.writeHead(404, helpers.headers);
@@ -50,20 +52,51 @@ exports.handleRequest = function (req, res) {
     }
 
   } else if (req.method === 'POST') {
-    archive.isUrlInList(req.url, (inList) => {
-      if (inList) {
-        archive.isUrlArchived(req.url, (isArchived) => {
-          if (isArchived) {
-            // show archived content
-            res.writeHead(200, helpers.headers);
-            res.end(archive.paths.archivedSites + '/' + req.url);
-          } else {
-            // show loading HTML file
-          }
-        });
-      } else {
-        // add to list
-      }
+    var body = '';
+    var url = '';
+
+    req.on('data', function(data) {
+      body += data;
+    });
+
+    req.on('end', function() {
+      url = body.split('=')[1];
+
+      archive.isUrlInList(url, (inList) => {
+        if (inList) {
+          archive.isUrlArchived(url, (isArchived) => {
+            if (isArchived) {
+              // show archived content
+              helpers.serveAssets(res, archive.paths.archivedSites + '/' + url, (data) => {
+                res.writeHead(200, helpers.headers);
+                res.end(data);
+              });
+            } else {
+              archive.readListOfUrls(function(urls) {
+                archive.downloadUrls(urls);
+              });
+
+              // show loading HTML file
+              helpers.serveAssets(res, archive.paths.siteAssets + '/loading.html', function(data) {
+                res.writeHead(200, helpers.headers);
+                res.end(data);
+              });
+            }
+          });
+        } else {
+           // add to list
+          console.log('not in list');
+          archive.addUrlToList(url + '\n', () => {
+            archive.readListOfUrls(function(urls) {
+              archive.downloadUrls(urls);
+            });
+          });      
+          helpers.serveAssets(res, archive.paths.siteAssets + '/loading.html', function(data) {
+            res.writeHead(302, helpers.headers);
+            res.end(data);
+          });
+        }
+      });
     });
   } 
 };
